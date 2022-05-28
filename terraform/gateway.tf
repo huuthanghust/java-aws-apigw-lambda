@@ -13,6 +13,7 @@ resource "aws_api_gateway_method" "hello_world_method" {
   rest_api_id   = "${aws_api_gateway_rest_api.hello_world_api.id}"
   resource_id   = "${aws_api_gateway_resource.hello_world_api_gateway.id}"
   http_method   = "${var.hello_world_http_method}"
+  api_key_required = true
   authorization = "NONE"
 }
 
@@ -26,7 +27,7 @@ resource "aws_api_gateway_integration" "hello_world_integration" {
   credentials             = "arn:aws:iam::${var.account_id}:role/${aws_iam_role.lambda_apigateway_iam_role.name}"
 }
 
-resource "aws_api_gateway_method_response" "200" {
+resource "aws_api_gateway_method_response" "return_200" {
   rest_api_id = "${aws_api_gateway_rest_api.hello_world_api.id}"
   resource_id = "${aws_api_gateway_resource.hello_world_api_gateway.id}"
   http_method = "${aws_api_gateway_method.hello_world_method.http_method}"
@@ -38,16 +39,35 @@ resource "aws_api_gateway_method_response" "200" {
   status_code = "200"
 }
 
+resource "aws_api_gateway_usage_plan" "demo_api_usage_plan" {
+  name = "usage_hello_world_api"
+
+  api_stages {
+    api_id = "${aws_api_gateway_rest_api.hello_world_api.id}"
+    stage  = "${aws_api_gateway_deployment.hello_world_deploy.stage_name}"
+  }
+}
+
+resource "aws_api_gateway_usage_plan_key" "demo_api_usage_plan_key" {
+  key_id        = "${aws_api_gateway_api_key.MyDemoApiKey.id}"
+  key_type      = "API_KEY"
+  usage_plan_id = "${aws_api_gateway_usage_plan.demo_api_usage_plan.id}"
+}
+
 resource "aws_api_gateway_integration_response" "hello_world_integration_response" {
   depends_on  = ["aws_api_gateway_integration.hello_world_integration"]
   rest_api_id = "${aws_api_gateway_rest_api.hello_world_api.id}"
   resource_id = "${aws_api_gateway_resource.hello_world_api_gateway.id}"
   http_method = "${aws_api_gateway_method.hello_world_method.http_method}"
-  status_code = "${aws_api_gateway_method_response.200.status_code}"
+  status_code = "${aws_api_gateway_method_response.return_200.status_code}"
 }
 
 resource "aws_api_gateway_deployment" "hello_world_deploy" {
   depends_on  = ["aws_api_gateway_integration.hello_world_integration"]
   stage_name  = "${var.api_env_stage_name}"
   rest_api_id = "${aws_api_gateway_rest_api.hello_world_api.id}"
+}
+
+resource "aws_api_gateway_api_key" "MyDemoApiKey" {
+  name = "test"
 }

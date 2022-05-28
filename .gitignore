@@ -5,4 +5,5 @@ terraform.tfvars
 
 *.iml
 .idea
+.terraform.lock.hcl
 **/target
